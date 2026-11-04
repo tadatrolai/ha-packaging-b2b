@@ -1,7 +1,7 @@
 /**
  * HÀ ANH PACKAGING - B2B INDUSTRIAL PACKAGING APPLICATION JS
  * Bộ máy tính giá sỉ thời gian thực, bộ lọc danh mục, tìm kiếm quy cách,
- * xử lý gửi yêu cầu báo giá & đăng ký đại lý KCN Bắc - Trung.
+ * xử lý gửi yêu cầu báo giá & đăng ký đại lý KCN Toàn Quốc.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -119,46 +119,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- BỘ MÁY TÍNH GIÁ SỈ THEO BẬC ---
   function calculateWholesalePrice() {
-    const prodConfig = PRODUCT_SPECS_MAP[state.selectedProductType] || PRODUCT_SPECS_MAP.opp;
-    let base = prodConfig.basePrice;
-
-    // Hệ số độ dày màng
-    if (state.selectedThickness.includes('50 mic')) {
-      base = Math.round(base * 1.1);
-    } else if (state.selectedThickness.includes('55 mic')) {
-      base = Math.round(base * 1.2);
-    }
-
-    // Hệ số màu sắc / in ấn
-    if (state.selectedColor.includes('màu') || state.selectedColor.includes('in chữ')) {
-      base = Math.round(base * 1.25);
-    }
-
-    // Chiết khấu theo bậc số lượng
     const qty = state.quantity;
-    let discountPercent = 0;
-    let tierText = 'Đơn giá sỉ xưởng mức tiêu chuẩn';
+    let tierText = 'Báo giá xuất xưởng theo giá nguyên liệu trong ngày';
 
     if (qty >= 50) {
-      discountPercent = 12;
-      tierText = 'Chiết khấu 12% - Bậc Nhà Máy & Đại Lý Lớn';
+      tierText = 'Khung giá ưu đãi đặc biệt — Nhà máy KCN & Đại lý Cấp 1';
     } else if (qty >= 20) {
-      discountPercent = 8;
-      tierText = 'Chiết khấu 8% - Đơn hàng từ 20 thùng';
+      tierText = 'Áp dụng chiết khấu sỉ bậc cao — Đơn hàng từ 20 thùng';
     } else if (qty >= 10) {
-      discountPercent = 5;
-      tierText = 'Chiết khấu 5% - Đơn hàng từ 10 thùng';
+      tierText = 'Áp dụng chiết khấu sỉ tiêu chuẩn — Đơn hàng từ 10 thùng';
     }
 
-    const discountedUnit = Math.round(base * (1 - discountPercent / 100));
-    const totalEst = discountedUnit * qty * (prodConfig.packMultiplier || 1);
-
-    state.unitPrice = discountedUnit;
-    state.totalPrice = totalEst;
-
-    // Cập nhật giao diện
-    displayUnitPrice.textContent = `${formatVND(discountedUnit)} đ / ${prodConfig.unit}`;
-    displayTotalPrice.textContent = `${formatVND(totalEst)} đ`;
+    displayUnitPrice.textContent = state.selectedThickness.split(' - ')[0] + ' • ' + state.selectedColor;
+    displayTotalPrice.textContent = qty + ' thùng / lô — Giá gốc nhà máy';
     displayDiscountTier.textContent = tierText;
   }
 
@@ -271,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     modalSelectedProductText.textContent = prodName;
-    modalSelectedSpecText.textContent = `Quy cách: ${specName} — Số lượng: ${qty} thùng — Đơn giá dự kiến: ${formatVND(unitPrice)} đ / cuộn`;
+    modalSelectedSpecText.textContent = 'Quy cách: ' + specName + ' — Số lượng: ' + qty + ' thùng — Nhận báo giá xuất xưởng mới nhất';
 
     // Cập nhật hidden inputs trong form
     document.getElementById('modalFieldProductName').value = prodName;
@@ -422,18 +395,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- DỮ LIỆU BẢNG GIÁ SỈ 12 DÒNG DÀNH CHO HYBRID STATIC HOSTING ---
   const WHOLESALE_CSV_ROWS = [
-    ['OPP-48-100Y-43M', 'Băng dính OPP trong / đục 48mm x 100Y', '43 mic', 'Cuộn', '11.500 đ', '10.800 đ', '10.200 đ', 'Đóng 6 cuộn/cây, 24 cây/thùng - Giao 24h KCN'],
-    ['OPP-48-100Y-50M', 'Băng dính OPP siêu dính 48mm x 100Y', '50 mic', 'Cuộn', '12.800 đ', '12.000 đ', '11.300 đ', 'Dán thùng nặng trên 25kg, chống bong mép'],
-    ['OPP-48-200Y-50M', 'Băng dính OPP cuộn lớn 48mm x 200Y', '50 mic', 'Cuộn', '23.500 đ', '22.000 đ', '20.800 đ', 'Cuộn dài tiết kiệm thời gian thay cuộn'],
-    ['OPP-60-100Y-50M', 'Băng dính OPP bản rộng 60mm x 100Y', '50 mic', 'Cuộn', '15.800 đ', '14.900 đ', '14.000 đ', 'Dán mép thùng carton khổ lớn'],
-    ['PE-50-2.8KG-17M', 'Màng PE quấn tay 50cm x 2.8kg - Lõi 0.2kg', '17 mic', 'Cuộn', '115.000 đ', '108.000 đ', '102.000 đ', 'Đóng 6 cuộn/thùng, độ kéo dãn 350%'],
-    ['PE-50-15KG-23M', 'Màng PE quấn máy tự động 50cm x 15kg', '23 mic', 'Cuộn', '590.000 đ', '560.000 đ', '530.000 đ', 'Chuyên dụng máy quấn pallet tự động KCN'],
-    ['PP-12-0.8MM-10K', 'Dây đai nhựa PP vàng / xanh 12mm x 0.8mm', '0.8mm', 'Cuộn 10kg', '310.000 đ', '295.000 đ', '280.000 đ', 'Chịu lực trên 150kg, chạy máy bán tự động'],
-    ['PET-16-0.9MM-20', 'Dây đai thép dẻo PET xanh rêu 16mm x 0.9mm', '0.9mm', 'Cuộn 20kg', '680.000 đ', '650.000 đ', '620.000 đ', 'Thay thế đai sắt, đai kiện hàng nặng xuất khẩu'],
-    ['LOGO-48-100Y-50', 'Băng dính in logo thương hiệu 48mm x 100Y', '50 mic', 'Cuộn', '15.500 đ', '14.200 đ', '13.000 đ', 'Miễn phí trục in từ 300 cây, in 1-3 màu'],
-    ['TECH-TAPE-2MAT', 'Băng dính xốp 2 mặt kỹ thuật 24mm x 10m', 'Xốp EVA 1mm', 'Cuộn', '18.000 đ', '16.500 đ', '15.000 đ', 'Dán biển hiệu, phụ kiện công nghiệp'],
-    ['FOAM-AIR-1.4M', 'Màng xốp hơi bọc hàng 1.4m x 100m', '2 lớp bóng khí', 'Cuộn', '295.000 đ', '275.000 đ', '260.000 đ', 'Chống va đập linh kiện điện tử, đồ gốm sứ'],
-    ['SILICA-GEL-5G', 'Hạt hút ẩm Silica Gel túi 5g đóng gói', 'Silica hoạt tính', 'Kg', '38.000 đ', '35.000 đ', '32.000 đ', 'Bảo quản hàng may mặc, da giày, cơ khí']
+    ['OPP-48-100Y-43M', 'Băng dính OPP trong / đục 48mm x 100Y', '43 mic', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Đóng 6 cuộn/cây, 24 cây/thùng - Giao 24h KCN'],
+    ['OPP-48-100Y-50M', 'Băng dính OPP siêu dính 48mm x 100Y', '50 mic', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Dán thùng nặng trên 25kg, chống bong mép'],
+    ['OPP-48-200Y-50M', 'Băng dính OPP cuộn lớn 48mm x 200Y', '50 mic', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Cuộn dài tiết kiệm thời gian thay cuộn'],
+    ['OPP-60-100Y-50M', 'Băng dính OPP bản rộng 60mm x 100Y', '50 mic', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Dán mép thùng carton khổ lớn'],
+    ['PE-50-2.8KG-17M', 'Màng PE quấn tay 50cm x 2.8kg - Lõi 0.2kg', '17 mic', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Đóng 6 cuộn/thùng, độ kéo dãn 350%'],
+    ['PE-50-15KG-23M', 'Màng PE quấn máy tự động 50cm x 15kg', '23 mic', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Chuyên dụng máy quấn pallet tự động KCN'],
+    ['PP-12-0.8MM-10K', 'Dây đai nhựa PP vàng / xanh 12mm x 0.8mm', '0.8mm', 'Cuộn 10kg', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Chịu lực trên 150kg, chạy máy bán tự động'],
+    ['PET-16-0.9MM-20', 'Dây đai thép dẻo PET xanh rêu 16mm x 0.9mm', '0.9mm', 'Cuộn 20kg', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Thay thế đai sắt, đai kiện hàng nặng xuất khẩu'],
+    ['LOGO-48-100Y-50', 'Băng dính in logo thương hiệu 48mm x 100Y', '50 mic', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Miễn phí trục in từ 300 cây, in 1-3 màu'],
+    ['TECH-TAPE-2MAT', 'Băng dính xốp 2 mặt kỹ thuật 24mm x 10m', 'Xốp EVA 1mm', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Dán biển hiệu, phụ kiện công nghiệp'],
+    ['FOAM-AIR-1.4M', 'Màng xốp hơi bọc hàng 1.4m x 100m', '2 lớp bóng khí', 'Cuộn', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Chống va đập linh kiện điện tử, đồ gốm sứ'],
+    ['SILICA-GEL-5G', 'Hạt hút ẩm Silica Gel túi 5g đóng gói', 'Silica hoạt tính', 'Kg', 'Báo giá gốc theo ngày', 'Chiết khấu sỉ bậc 1', 'Chiết khấu Đại lý Cấp 1 & KCN', 'Bảo quản hàng may mặc, da giày, cơ khí']
   ];
 
   function createPriceListCsvBlob() {
@@ -634,8 +607,8 @@ document.addEventListener('DOMContentLoaded', () => {
         phone: phoneInput.value.trim(),
         email: emailInput.value.trim(),
         region: regionInput.value,
-        partner_type: typeInput.value,
-        monthly_volume: volumeInput.value,
+        partner_type: typeInput ? typeInput.value : '',
+        monthly_volume: volumeInput ? volumeInput.value : '',
         message: messageInput.value.trim()
       };
 
