@@ -1,0 +1,10 @@
+# Test evidence, temporary scripts, plans, and local SQLite database
+hermes-verify-*
+test_screenshots/
+test_*.py
+plan*.md
+data/
+*.db
+*.pyc
+__pycache__/
+.DS_Store
