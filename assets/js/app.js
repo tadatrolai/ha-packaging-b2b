@@ -727,10 +727,21 @@ document.addEventListener('DOMContentLoaded', () => {
       state.activeCategoryFilter = cat;
       applyFilters();
 
-      // Cuộn mượt tới khu vực danh mục nếu ở màn hình nhỏ
+      // Dong bo kich hoat tab Danh muc san pham #catalog
+      setActiveSubNavItem('#catalog');
+      if (window.location.hash !== '#catalog') {
+        history.pushState(null, '', '#catalog');
+      }
+      isScrollSpyLocked = true;
+      clearTimeout(scrollSpyLockTimer);
+      scrollSpyLockTimer = setTimeout(() => {
+        isScrollSpyLocked = false;
+      }, 700);
+
+      // Cuon muot toi khu vuc danh muc neu o man hinh nho bu tru header
       const targetSec = document.getElementById('catalog');
       if (targetSec && window.innerWidth < 992) {
-        targetSec.scrollIntoView({ behavior: 'smooth' });
+        scrollToTargetWithOffset(targetSec, true);
       }
     });
   });
@@ -830,5 +841,180 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 300);
     }, 4500);
   }
+
+  // --- DIEU KHIEN SUB-NAV ACTIVE TAB VA SCROLLSPY VA SMOOTH SCROLL BU TRU HEADER ---
+  const subNavItems = document.querySelectorAll('.sub-nav-list .sub-nav-item');
+  const subNavLinks = document.querySelectorAll('.sub-nav-list .sub-nav-item a');
+  const siteHeaderElem = document.querySelector('.site-header');
+
+  let isScrollSpyLocked = false;
+  let scrollSpyLockTimer = null;
+
+  function getStickyHeaderOffset() {
+    const h = siteHeaderElem ? siteHeaderElem.getBoundingClientRect().height : 122;
+    return Math.round(h) + 12;
+  }
+
+  function setActiveSubNavItem(hash) {
+    if (!hash) return;
+    const cleanHash = hash.startsWith('#') ? hash : '#' + hash;
+    subNavItems.forEach(item => {
+      const link = item.querySelector('a');
+      const href = link ? link.getAttribute('href') : '';
+      if (href === cleanHash) {
+        item.classList.add('active');
+        if (link) link.classList.add('active');
+      } else {
+        item.classList.remove('active');
+        if (link) link.classList.remove('active');
+      }
+    });
+  }
+
+  function scrollToTargetWithOffset(targetElem, smooth = true) {
+    if (!targetElem) return;
+    const offset = getStickyHeaderOffset();
+    const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || window.scrollY || 0;
+    const elemTop = targetElem.getBoundingClientRect().top + currentScrollY;
+    const targetTop = Math.max(0, elemTop - offset);
+    window.scrollTo({
+      top: targetTop,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+  }
+
+  // 1. Khi nguoi dung click vao the a trong .sub-nav-list
+  subNavLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      const targetHash = link.getAttribute('href');
+      if (!targetHash || !targetHash.startsWith('#')) return;
+
+      const targetElem = document.querySelector(targetHash);
+      if (!targetElem) return;
+
+      e.preventDefault();
+
+      // Xoa lop active khoi tat ca va gan ngay lop active cho tab vua bam
+      subNavItems.forEach(item => {
+        item.classList.remove('active');
+        const a = item.querySelector('a');
+        if (a) a.classList.remove('active');
+      });
+      const parentItem = link.closest('.sub-nav-item');
+      if (parentItem) {
+        parentItem.classList.add('active');
+      }
+      link.classList.add('active');
+
+      // Tam khoa ScrollSpy trong 700ms de su kien scroll khong nhay nguoc
+      isScrollSpyLocked = true;
+      clearTimeout(scrollSpyLockTimer);
+      scrollSpyLockTimer = setTimeout(() => {
+        isScrollSpyLocked = false;
+      }, 700);
+
+      // Mo khoa them khi su kien scrollend kich hoat neu trinh duyet ho tro
+      const onScrollEnd = () => {
+        isScrollSpyLocked = false;
+        window.removeEventListener('scrollend', onScrollEnd);
+      };
+      window.addEventListener('scrollend', onScrollEnd, { once: true });
+
+      // Cuon muot toi phan tu dich bu tru headerHeight cong 12px
+      scrollToTargetWithOffset(targetElem, true);
+
+      // Cap nhat history.pushState de URL hien thi dung hash
+      if (window.location.hash !== targetHash) {
+        history.pushState(null, '', targetHash);
+      }
+    });
+  });
+
+  // Cac vung theo doi cho ScrollSpy theo thu tu tren xuong
+  const trackedNavSections = [
+    { id: 'quick-quote', hash: '#quick-quote' },
+    { id: 'catalog', hash: '#catalog' },
+    { id: 'factory-capacity', hash: '#factory-capacity' },
+    { id: 'partnership', hash: '#partnership' },
+    { id: 'partnership-form-anchor', hash: '#partnership-form-anchor' }
+  ];
+
+  function updateScrollSpy() {
+    if (isScrollSpyLocked) return;
+
+    const offset = getStickyHeaderOffset();
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop || window.scrollY || 0;
+
+    // Neu cuon cham day trang, kich hoat tab cuoi cung
+    const isAtBottom = (window.innerHeight + scrollY) >= (document.documentElement.scrollHeight - 60);
+    if (isAtBottom) {
+      setActiveSubNavItem('#partnership-form-anchor');
+      return;
+    }
+
+    let currentHash = null;
+    const threshold = offset + 50;
+
+    for (let i = 0; i < trackedNavSections.length; i++) {
+      const sec = trackedNavSections[i];
+      const elem = document.getElementById(sec.id);
+      if (!elem) continue;
+      const rect = elem.getBoundingClientRect();
+      if (rect.top <= threshold) {
+        currentHash = sec.hash;
+      }
+    }
+
+    if (currentHash) {
+      setActiveSubNavItem(currentHash);
+    }
+  }
+
+  // Cuon trang tu nhien
+  let scrollThrottleTimer = null;
+  window.addEventListener('scroll', () => {
+    if (isScrollSpyLocked) return;
+    if (scrollThrottleTimer) return;
+    scrollThrottleTimer = setTimeout(() => {
+      scrollThrottleTimer = null;
+      updateScrollSpy();
+    }, 50);
+  }, { passive: true });
+
+  // 2. Xu ly khi mo trang co san hash hoac su kien hashchange
+  function handleUrlHash(smooth = false) {
+    const hash = window.location.hash;
+    if (hash && hash.length > 1) {
+      const targetElem = document.querySelector(hash);
+      if (targetElem) {
+        setActiveSubNavItem(hash);
+        isScrollSpyLocked = true;
+        clearTimeout(scrollSpyLockTimer);
+        scrollSpyLockTimer = setTimeout(() => {
+          isScrollSpyLocked = false;
+        }, 700);
+        scrollToTargetWithOffset(targetElem, smooth);
+      }
+    }
+  }
+
+  if (window.location.hash) {
+    handleUrlHash(false);
+    setTimeout(() => {
+      handleUrlHash(false);
+    }, 120);
+  } else if (window.pageYOffset > 50) {
+    updateScrollSpy();
+  }
+
+  window.addEventListener('hashchange', () => {
+    handleUrlHash(false);
+  });
+
+  window.addEventListener('load', () => {
+    if (window.location.hash) {
+      handleUrlHash(false);
+    }
+  });
 
 });
